@@ -18,14 +18,17 @@ import torch
 os.makedirs("images", exist_ok=True)
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--n_epochs", type=int, default=200, help="number of epochs of training")
+parser.add_argument("--img_dir", type=str,  help="input data from where")
+parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
+parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
+parser.add_argument("--project_name", type=str, default='SATEF1', help="project name (model save path)")
 parser.add_argument("--batch_size", type=int, default=1, help="size of the batches")
 parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rate")
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=288, help="dimensionality of the latent space")
-parser.add_argument("--img_size", type=int, default=288, help="size of each image dimension")
+parser.add_argument("--latent_dim", type=int, default=512, help="dimensionality of the latent space")
+parser.add_argument("--img_size", type=int, default=512, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
 opt = parser.parse_args()
@@ -116,46 +119,17 @@ if cuda:
 generator.apply(weights_init_normal)
 discriminator.apply(weights_init_normal)
 
-# Configure data loader
-
-img_dir = r'./sdp4fenleiball/*.png'
-
 
 # In[3]:
 
 
-imgs = glob.glob(img_dir)
+imgs = glob.glob(opt.img_dir)
 
-
-
-
-species = ['BALL14']
-
-
-
-
+species = ['sate']
 
 species_to_idx = dict((c, i) for i, c in enumerate(species))
 
-
-# In[7]:
-
-
-
-# In[8]:
-
-
 idx_to_species = dict((v, k) for k, v in species_to_idx.items())
-
-
-
-
-
-
-
-
-# In[10]:
-
 
 labels = []
 for img in imgs:
@@ -163,22 +137,11 @@ for img in imgs:
         if c in img:
             labels.append(i)
 
-
-# In[11]:
-
-
-
-# In[12]:
-
-
 transforms = transforms.Compose([
-    transforms.Resize((288,288)),
+    transforms.Resize((512, 512)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
 ])
-
-
-# In[13]:
 
 
 class WT_dataset(data.Dataset):
@@ -199,25 +162,10 @@ class WT_dataset(data.Dataset):
         return len(self.imgs_path)
 
 
-# In[14]:
-
-
 dataset = WT_dataset(imgs, labels)
 
-
-
-
-# os.makedirs("../../data/mnist", exist_ok=True)
 dataloader = torch.utils.data.DataLoader(
-    # datasets.MNIST(
-    #     "../../data/mnist",
-    #     train=True,
-    #     download=True,
-    #     transform=transforms.Compose(
-    #         [transforms.Resize(opt.img_size), transforms.ToTensor(), transforms.Normalize([0.5], [0.5])]
-    #     ),
-    # ),
-    dataset =dataset ,
+    dataset=dataset,
     batch_size=opt.batch_size,
     shuffle=True,
 )
@@ -231,6 +179,10 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 #  Training
 # ----------
+import pandas as pd
+
+best_loss = -1
+training_data = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
 
 for epoch in range(opt.n_epochs):
     for i, (imgs, _) in enumerate(dataloader):
@@ -279,10 +231,27 @@ for epoch in range(opt.n_epochs):
             % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
         )
 
+        training_data.loc[epoch] = {"epoch": epoch, "d_loss": d_loss.item(),"g_loss":g_loss.item()}
+
+        if best_loss > g_loss and epoch > opt.SB_before:
+            if best_loss == -1:
+
+                torch.save(generator, opt.project_name + '/G3' + str(epoch) + '.pt')
+                torch.save(discriminator, opt.project_name + '/D3' + str(epoch) + '.pt')
+                print("模型保存完毕")
+            else:
+                try:
+                    os.remove(opt.project_name + 'G3*')
+                    os.remove(opt.project_name + 'D3*')
+                except:
+                    print('删除模型失败')
+                best_loss = g_loss
+                torch.save(generator, opt.project_name + '/G3' + str(epoch) + '.pt')
+                torch.save(discriminator, opt.project_name + '/D3' + str(epoch) + '.pt')
+                print("模型保存完毕")
+
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
             save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
 
-
-torch.save(generator, 'G3BALL200.pt')
-torch.save(discriminator, 'D3BALL200.pt')
+training_data.to_csv("train_data")
