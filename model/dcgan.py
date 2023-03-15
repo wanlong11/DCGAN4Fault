@@ -15,10 +15,10 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
-os.makedirs("images", exist_ok=True)
+
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--img_dir", type=str,  help="input data from where")
+parser.add_argument("--img_dir", type=str, default="../data/SDP/data_1/", help="input data from where")
 parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
 parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
 parser.add_argument("--project_name", type=str, default='SATEF1', help="project name (model save path)")
@@ -27,15 +27,15 @@ parser.add_argument("--lr", type=float, default=0.0002, help="adam: learning rat
 parser.add_argument("--b1", type=float, default=0.5, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--b2", type=float, default=0.999, help="adam: decay of first order momentum of gradient")
 parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads to use during batch generation")
-parser.add_argument("--latent_dim", type=int, default=512, help="dimensionality of the latent space")
-parser.add_argument("--img_size", type=int, default=512, help="size of each image dimension")
+parser.add_argument("--latent_dim", type=int, default=256, help="dimensionality of the latent space")
+parser.add_argument("--img_size", type=int, default=256, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
 parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
 opt = parser.parse_args()
 print(opt)
 
 cuda = True if torch.cuda.is_available() else False
-
+os.makedirs(opt.project_name+"images", exist_ok=True)
 
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -119,11 +119,10 @@ if cuda:
 generator.apply(weights_init_normal)
 discriminator.apply(weights_init_normal)
 
-
 # In[3]:
 
 
-imgs = glob.glob(opt.img_dir)
+imgs = glob.glob(opt.img_dir+"*")
 
 species = ['sate']
 
@@ -138,7 +137,7 @@ for img in imgs:
             labels.append(i)
 
 transforms = transforms.Compose([
-    transforms.Resize((512, 512)),
+    transforms.Resize((opt.img_size, opt.img_size)),
     transforms.ToTensor(),
     transforms.Normalize(mean=[.5, .5, .5], std=[.5, .5, .5])
 ])
@@ -181,9 +180,10 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 import pandas as pd
 
-best_loss = -1
+best_loss = 1e5
 training_data = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
 
+os.makedirs(opt.project_name,exist_ok=True)
 for epoch in range(opt.n_epochs):
     for i, (imgs, _) in enumerate(dataloader):
 
@@ -231,7 +231,7 @@ for epoch in range(opt.n_epochs):
             % (epoch, opt.n_epochs, i, len(dataloader), d_loss.item(), g_loss.item())
         )
 
-        training_data.loc[epoch] = {"epoch": epoch, "d_loss": d_loss.item(),"g_loss":g_loss.item()}
+        training_data.loc[epoch] = {"epoch": epoch, "d_loss": d_loss.item(), "g_loss": g_loss.item()}
 
         if best_loss > g_loss and epoch > opt.SB_before:
             if best_loss == -1:
@@ -241,8 +241,9 @@ for epoch in range(opt.n_epochs):
                 print("模型保存完毕")
             else:
                 try:
-                    os.remove(opt.project_name + 'G3*')
-                    os.remove(opt.project_name + 'D3*')
+                    temp=os.listdir(opt.project_name)
+                    for tName in temp:
+                        os.remove(opt.project_name +'/'+ tName)
                 except:
                     print('删除模型失败')
                 best_loss = g_loss
@@ -252,6 +253,6 @@ for epoch in range(opt.n_epochs):
 
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], "images/%d.png" % batches_done, nrow=5, normalize=True)
+            save_image(gen_imgs.data[:25], opt.project_name+"images/%d.png" % batches_done, nrow=5, normalize=True)
 
-training_data.to_csv("train_data")
+training_data.to_csv(opt.project_name + "/train_data")
