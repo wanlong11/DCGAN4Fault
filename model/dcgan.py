@@ -27,7 +27,7 @@ parser.add_argument("--n_cpu", type=int, default=1, help="number of cpu threads 
 parser.add_argument("--latent_dim", type=int, default=256, help="dimensionality of the latent space")
 parser.add_argument("--img_size", type=int, default=256, help="size of each image dimension")
 parser.add_argument("--channels", type=int, default=3, help="number of image channels")
-parser.add_argument("--sample_interval", type=int, default=400, help="interval between image sampling")
+parser.add_argument("--sample_interval", type=int, default=200, help="interval between image sampling")
 opt = parser.parse_args()
 print(opt)
 
@@ -177,7 +177,8 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 import pandas as pd
 
-best_loss = 1e5
+best_gloss,best_dloss = 1e5,1e5
+
 training_data = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
 
 os.makedirs(opt.project_name,exist_ok=True)
@@ -230,26 +231,46 @@ for epoch in range(opt.n_epochs):
 
         training_data.loc[epoch] = {"epoch": epoch, "d_loss": d_loss.item(), "g_loss": g_loss.item()}
 
-        if best_loss > g_loss and epoch > opt.SB_before:
-            if best_loss == -1:
+        #存储g_loss最优
+        if best_gloss > g_loss and epoch > opt.SB_before:
+            if best_gloss == 1e5:
 
-                torch.save(generator, opt.project_name + '/G3' + str(epoch) + '.pt')
-                torch.save(discriminator, opt.project_name + '/D3' + str(epoch) + '.pt')
-                print("模型保存完毕")
+                torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'gbest.pt')
+                print("gbest模型保存完毕")
             else:
                 try:
                     temp=os.listdir(opt.project_name)
                     for tName in temp:
-                        os.remove(opt.project_name +'/'+ tName)
+                        if 'gbest' in tName:
+                            os.remove(opt.project_name +'/'+ tName)
                 except:
-                    print('删除模型失败')
-                best_loss = g_loss
-                torch.save(generator, opt.project_name + '/G3' + str(epoch) + '.pt')
-                torch.save(discriminator, opt.project_name + '/D3' + str(epoch) + '.pt')
-                print("模型保存完毕")
+                    print('删除gbest模型失败')
+                best_gloss = g_loss
+                torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'gbest.pt')
+                print("gbest模型保存完毕")
+        #Dloss最优
+        if best_dloss > d_loss and epoch > opt.SB_before:
+            if best_dloss == 1e5:
+
+                torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'dbest.pt')
+                print("dbest模型保存完毕")
+            else:
+                try:
+                    temp=os.listdir(opt.project_name)
+                    for tName in temp:
+                        if 'dbest' in tName:
+                            os.remove(opt.project_name +'/'+ tName)
+                except:
+                    print('删除dbest模型失败')
+                best_gloss = g_loss
+                torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'dbest.pt')
+                print("dbest模型保存完毕")
+
 
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:25], opt.project_name+"images/%d.png" % batches_done, nrow=5, normalize=True)
+            save_image(gen_imgs.data[:9], opt.project_name+"images/%d.png" % batches_done, nrow=3, normalize=True)
+
+torch.save(generator, opt.project_name + '/G3last.pt')
 
 training_data.to_csv(opt.project_name + "/train_data")
