@@ -233,7 +233,7 @@ for epoch in range(opt.n_epochs):
         # 存储g_loss最优
         if best_gloss > g_loss and epoch > opt.SB_before:
             if best_gloss == 1e5:
-
+                best_gloss=g_loss.item()
                 torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'gbest.pt')
                 print("gbest模型保存完毕")
             else:
@@ -245,13 +245,13 @@ for epoch in range(opt.n_epochs):
                             print('删除gbest模型成功')
                 except:
                     print('删除gbest模型失败')
-                best_gloss = g_loss
+                best_gloss = g_loss.item()
                 torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'gbest.pt')
                 print("gbest模型保存完毕")
         # Dloss最优
-        if best_dloss > d_loss and epoch > opt.SB_before:
+        if best_dloss > d_loss.item() and epoch > opt.SB_before:
             if best_dloss == 1e5:
-
+                best_dloss=d_loss.item()
                 torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'dbest.pt')
                 print("dbest模型保存完毕")
             else:
@@ -263,7 +263,7 @@ for epoch in range(opt.n_epochs):
                             print('删除dbest模型成功')
                 except:
                     print('删除dbest模型失败')
-                best_gloss = g_loss
+                best_gloss = g_loss.item()
                 torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'dbest.pt')
                 print("dbest模型保存完毕")
 
