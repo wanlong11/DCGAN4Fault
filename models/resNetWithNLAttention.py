@@ -65,7 +65,7 @@ class ResNet18NonLocal(nn.Module):
     def __init__(self, num_classes=1000):
         super(ResNet18NonLocal, self).__init__()
 
-        self.resnet18 = models.resnet18(pretrained=True)
+        self.resnet18 = models.resnet18(pretrained=False)
         self.non_local1 = NonLocalBlock(in_channels=64)
         self.non_local2 = NonLocalBlock(in_channels=128)
         self.non_local3 = NonLocalBlock(in_channels=256)
@@ -95,7 +95,7 @@ class ResNet50NonLocal(nn.Module):
     def __init__(self, num_classes=1000):
         super(ResNet50NonLocal, self).__init__()
 
-        self.resnet50 = models.resnet50(pretrained=True)
+        self.resnet50 = models.resnet50(pretrained=False)
         self.non_local1 = NonLocalBlock(in_channels=256)
         self.non_local2 = NonLocalBlock(in_channels=512)
         self.non_local3 = NonLocalBlock(in_channels=1024)
