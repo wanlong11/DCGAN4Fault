@@ -114,6 +114,7 @@ for epoch in range(start_epoch, opt.n_epochs):
             writer.add_scalar('Eval/Accuracy', 100*correct / total, global_step=global_step)
             #提前停止策略
             if best_acc<(correct/total):
+                best_acc=(correct/total)
                 try:
                     temp = os.listdir(opt.save_dir)
                     for tName in temp:
