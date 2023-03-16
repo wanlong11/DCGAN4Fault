@@ -1,9 +1,9 @@
 import argparse
 
 import torch.nn as nn
-
+from torch.utils.tensorboard import SummaryWriter
 from model.resNet import ResNet18
-
+import os
 import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
@@ -13,6 +13,10 @@ parser.add_argument("--data_dir", type=str, default="../data/SDP/data_1/", help=
 parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
 parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
 parser.add_argument("--eval_interval", type=int, default=1, help="number of evaluation interval step")
+parser.add_argument("--checkpoint", type=str, help="checkpoint path")
+parser.add_argument("--tensorboard_dir", type=str ,help="tensorboard dirationary")
+parser.add_argument("--save_dir",type=str,help="the path of save checkpoint")
+parser.add_argument("--project_name",type=str,help="project name")
 opt = parser.parse_args()
 
 
@@ -37,6 +41,7 @@ def calcuMeanAndStd(path):
 
     return list(mean), list(std)  # 这里有可能会有问题 check
 
+writer = SummaryWriter(log_dir=opt.tensorboard_dir)
 
 data_dir = opt.data_dir
 train_transforms = transforms.Compose([
@@ -63,17 +68,30 @@ train_loader = torch.utils.data.DataLoader(train_set, batch_size=64, shuffle=Tru
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=False)
 
 model = ResNet18(num_classes=10)
-criterion = nn.CrossEntropyLoss()
 optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
+criterion = nn.CrossEntropyLoss()
+start_epoch = 0
+
+# 重载模型模块
+if opt.checkpoint != "":
+    print("重新加载模型....")
+    checkpoint = torch.load(opt.checkpoint)
+    model.load_state_dict(checkpoint['model_state_dict'])
+    optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
+    start_epoch = checkpoint['epoch']
 
 # Train the model
-for epoch in range(opt.n_epochs):
+global_step=0
+best_acc=0
+for epoch in range(start_epoch, opt.n_epochs):
     for images, labels in train_loader:
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
         loss.backward()
         optimizer.step()
+        writer.add_scalar('Train/Loss', loss, global_step=global_step)
+        global_step+=1
         print(loss.item())
 
     # evaluate the model
@@ -86,5 +104,20 @@ for epoch in range(opt.n_epochs):
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
                 correct += (predicted == labels).sum().item()
-        print('Accuracy of the network on the test images: %d %%' % (
-                100 * correct / total))
+                writer.add_scalar('Eval/Loss', loss, global_step=global_step)
+            writer.add_scalar('Eval/Accuracy', 100*correct / total, global_step=global_step)
+            #提前停止策略
+            if best_acc<(correct/total):
+                try:
+                    temp = os.listdir(opt.save_dir)
+                    for tName in temp:
+                        if 'best' in tName:
+                            os.remove('./' + opt.save_dir + '/' + tName)
+                            print('删除模型成功')
+                except:
+                    print("删除失败")
+                torch.save(model, opt.save_dir + '/' + opt.project_name + 'best.pt')
+
+
+torch.save(model, opt.save_dir + '/' + opt.project_name + 'last.pt')
+
