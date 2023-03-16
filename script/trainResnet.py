@@ -1,17 +1,7 @@
 import torch
 import torch.nn as nn
-import torchvision.models as models
 
-class ResNet18(nn.Module):
-    def __init__(self, num_classes):
-        super(ResNet18, self).__init__()
-        self.resnet = models.resnet18(pretrained=True)
-        self.fc = nn.Linear(512, num_classes)
-
-    def forward(self, x):
-        x = self.resnet(x)
-        x = self.fc(x)
-        return x
+from model.resNet import ResNet18
 
 model = ResNet18(num_classes=10)
 criterion = nn.CrossEntropyLoss()
