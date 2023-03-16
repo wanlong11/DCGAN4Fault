@@ -9,10 +9,13 @@ import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--img_dir", type=str, default="../data/SDP/data_1/", help="input data from where")
+parser.add_argument("--data_dir", type=str, default="../data/SDP/data_1/", help="where the data is")
 parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
 parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
+parser.add_argument("--eval_interval", type=int, default=1, help="number of evaluation interval step")
 opt = parser.parse_args()
+
+
 def calcuMeanAndStd(path):
     # 计算路径下所有图像的通道mean和std
     # Define the dataset and data loader
@@ -32,9 +35,10 @@ def calcuMeanAndStd(path):
     mean = sum_ / len(dataset)
     std = torch.sqrt(sum_sq / len(dataset) - mean ** 2)
 
-    return list(mean), list(std)  # todo 这里有可能会有问题 check
+    return list(mean), list(std)  # 这里有可能会有问题 check
 
-data_dir = "path/to/data"
+
+data_dir = opt.data_dir
 train_transforms = transforms.Compose([
     transforms.RandomResizedCrop(224),
     transforms.RandomHorizontalFlip(),
@@ -73,8 +77,7 @@ for epoch in range(opt.n_epochs):
         print(loss.item())
 
     # evaluate the model
-    #todo add SB_before and eval_interval args  check
-    if epoch > opt.SB_before and epoch % opt.eval_interval ==0:
+    if epoch > opt.SB_before and epoch % opt.eval_interval == 0:
         correct = 0
         total = 0
         with torch.no_grad():
