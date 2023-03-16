@@ -12,8 +12,6 @@ from PIL import Image
 import torch.nn as nn
 import torch
 
-
-
 parser = argparse.ArgumentParser()
 parser.add_argument("--img_dir", type=str, default="../data/SDP/data_1/", help="input data from where")
 parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
@@ -32,7 +30,8 @@ opt = parser.parse_args()
 print(opt)
 
 cuda = True if torch.cuda.is_available() else False
-os.makedirs(opt.project_name+"images", exist_ok=True)
+os.makedirs(opt.project_name + "images", exist_ok=True)
+
 
 def weights_init_normal(m):
     classname = m.__class__.__name__
@@ -119,7 +118,7 @@ discriminator.apply(weights_init_normal)
 # In[3]:
 
 
-imgs = glob.glob(opt.img_dir+"*")
+imgs = glob.glob(opt.img_dir + "*")
 
 species = ['sate']
 
@@ -177,11 +176,11 @@ Tensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
 # ----------
 import pandas as pd
 
-best_gloss,best_dloss = 1e5,1e5
+best_gloss, best_dloss = 1e5, 1e5
 
 training_data = pd.DataFrame(columns=['epoch', 'd_loss', 'g_loss'])
 
-os.makedirs(opt.project_name,exist_ok=True)
+os.makedirs(opt.project_name, exist_ok=True)
 for epoch in range(opt.n_epochs):
     for i, (imgs, _) in enumerate(dataloader):
 
@@ -231,7 +230,7 @@ for epoch in range(opt.n_epochs):
 
         training_data.loc[epoch] = {"epoch": epoch, "d_loss": d_loss.item(), "g_loss": g_loss.item()}
 
-        #存储g_loss最优
+        # 存储g_loss最优
         if best_gloss > g_loss and epoch > opt.SB_before:
             if best_gloss == 1e5:
 
@@ -239,16 +238,17 @@ for epoch in range(opt.n_epochs):
                 print("gbest模型保存完毕")
             else:
                 try:
-                    temp=os.listdir(opt.project_name)
+                    temp = os.listdir(opt.project_name)
                     for tName in temp:
                         if 'gbest' in tName:
-                            os.remove(opt.project_name +'/'+ tName)
+                            os.remove('./'+opt.project_name + '/' + tName)
+                            print('删除gbest模型成功')
                 except:
                     print('删除gbest模型失败')
                 best_gloss = g_loss
                 torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'gbest.pt')
                 print("gbest模型保存完毕")
-        #Dloss最优
+        # Dloss最优
         if best_dloss > d_loss and epoch > opt.SB_before:
             if best_dloss == 1e5:
 
@@ -256,20 +256,20 @@ for epoch in range(opt.n_epochs):
                 print("dbest模型保存完毕")
             else:
                 try:
-                    temp=os.listdir(opt.project_name)
+                    temp = os.listdir(opt.project_name)
                     for tName in temp:
                         if 'dbest' in tName:
-                            os.remove(opt.project_name +'/'+ tName)
+                            os.remove('./'+opt.project_name + '/' + tName)
+                            print('删除dbest模型成功')
                 except:
                     print('删除dbest模型失败')
                 best_gloss = g_loss
                 torch.save(generator, opt.project_name + '/G3' + str(epoch) + 'dbest.pt')
                 print("dbest模型保存完毕")
 
-
         batches_done = epoch * len(dataloader) + i
         if batches_done % opt.sample_interval == 0:
-            save_image(gen_imgs.data[:9], opt.project_name+"images/%d.png" % batches_done, nrow=3, normalize=True)
+            save_image(gen_imgs.data[:9], opt.project_name + "images/%d.png" % batches_done, nrow=3, normalize=True)
 
 torch.save(generator, opt.project_name + '/G3last.pt')
 
