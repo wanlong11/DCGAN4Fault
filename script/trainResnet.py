@@ -2,12 +2,13 @@ import argparse
 
 import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
-from model.resNet import ResNet18
+from models.resNet import ResNet18
 import os
 import torch
 import torchvision.transforms as transforms
 from torchvision.datasets import ImageFolder
 
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 parser = argparse.ArgumentParser()
 parser.add_argument("--data_dir", type=str, default="../data/SDP/data_1/", help="where the data is")
 parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
@@ -17,6 +18,7 @@ parser.add_argument("--checkpoint", type=str,default="", help="checkpoint path")
 parser.add_argument("--tensorboard_dir", type=str ,help="tensorboard dirationary")
 parser.add_argument("--save_dir",type=str,help="the path of save checkpoint")
 parser.add_argument("--project_name",type=str,help="project name")
+parser.add_argument("--batch_size",type=int,default=64,help="project name")
 opt = parser.parse_args()
 
 
@@ -24,7 +26,7 @@ def calcuMeanAndStd(path):
     # 计算路径下所有图像的通道mean和std
     # Define the dataset and data loader
     dataset = ImageFolder(path, transform=transforms.ToTensor())
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=1)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=False, num_workers=1)
 
     # Define variables to store the sum and square sum of pixel values
     sum_ = torch.zeros(3)
@@ -59,15 +61,14 @@ train_transforms = transforms.Compose([
 # ])
 
 dataset = ImageFolder(data_dir, transform=train_transforms)
-
 # Split the dataset into training and testing sets
-train_set, test_set = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), int(0.2 * len(dataset))])
+train_set, test_set = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset)-int(0.8 * len(dataset))])
 
 # Define the data loaders for training and testing sets
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=64, shuffle=True)
 test_loader = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=False)
 
-model = ResNet18(num_classes=10)
+model = ResNet18(num_classes=10).to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 criterion = nn.CrossEntropyLoss()
 start_epoch = 0
@@ -81,10 +82,13 @@ if opt.checkpoint != "":
     start_epoch = checkpoint['epoch']
 
 # Train the model
+os.makedirs(opt.save_dir,exist_ok=True)
 global_step=0
 best_acc=0
 for epoch in range(start_epoch, opt.n_epochs):
     for images, labels in train_loader:
+        images=images.to(device)
+        labels=labels.to(device)
         optimizer.zero_grad()
         outputs = model(images)
         loss = criterion(outputs, labels)
@@ -100,6 +104,8 @@ for epoch in range(start_epoch, opt.n_epochs):
         total = 0
         with torch.no_grad():
             for images, labels in test_loader:
+                images=images.to(device)
+                labels=labels.to(device)
                 outputs = model(images)
                 _, predicted = torch.max(outputs.data, 1)
                 total += labels.size(0)
