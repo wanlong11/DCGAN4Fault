@@ -13,7 +13,7 @@ parser.add_argument("--data_dir", type=str, default="../data/SDP/data_1/", help=
 parser.add_argument("--SB_before", type=int, default=500, help="number of save best model epochs begin ")
 parser.add_argument("--n_epochs", type=int, default=1000, help="number of epochs of training")
 parser.add_argument("--eval_interval", type=int, default=1, help="number of evaluation interval step")
-parser.add_argument("--checkpoint", type=str, help="checkpoint path")
+parser.add_argument("--checkpoint", type=str,default="", help="checkpoint path")
 parser.add_argument("--tensorboard_dir", type=str ,help="tensorboard dirationary")
 parser.add_argument("--save_dir",type=str,help="the path of save checkpoint")
 parser.add_argument("--project_name",type=str,help="project name")

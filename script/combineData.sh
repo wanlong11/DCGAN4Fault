@@ -4,7 +4,7 @@ mkdir -p ../data/testData
 
 for i in {1..4}; do
   mkdir -p ../data/trainData/data_"$i"
-  cp ../data/GEN/SATEF"$i"/* ../data/trainData/data_"$i"/
+  cp ../data/GEN/SATEF"$i"_GEN/* ../data/trainData/data_"$i"/
   # shellcheck disable=SC2012
   numfile=$(ls -l ../data/SDP/data_"$i" | wc -l)
   # shellcheck disable=SC2004
