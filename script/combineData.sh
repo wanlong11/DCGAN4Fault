@@ -17,7 +17,7 @@ echo 第0个文件构造完毕
 
 
 #每个类虚拟数据增加个数
-export NUM_TO_ADD = 1000
+export NUM_TO_ADD=1000
 
 
 for i in {1..4}; do

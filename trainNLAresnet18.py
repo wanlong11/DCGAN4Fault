@@ -48,15 +48,13 @@ writer = SummaryWriter(log_dir=opt.tensorboard_dir)
 
 data_dir = opt.data_dir
 train_transforms = transforms.Compose([
-    transforms.RandomResizedCrop(224),
-    transforms.RandomHorizontalFlip(),
+
     transforms.ToTensor(),
     transforms.Normalize(*calcuMeanAndStd(path=data_dir))
 ])
 
 test_transforms = transforms.Compose([
-    transforms.Resize(256),
-    transforms.CenterCrop(224),
+
     transforms.ToTensor(),
     transforms.Normalize(*calcuMeanAndStd(path=data_dir))
 ])
