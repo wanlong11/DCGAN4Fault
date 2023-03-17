@@ -52,7 +52,6 @@ def calcuMeanAndStd(path):
 
     return list(mean), list(std)  # 这里有可能会有问题 check
 
-writer = SummaryWriter(log_dir=opt.tensorboard_dir)
 
 
 # train_transforms = transforms.Compose([
