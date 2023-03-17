@@ -5,4 +5,5 @@ python trainResnet50.py \
         --eval_interval 1 \
         --tensorboard_dir /tf_logs/RESNET50/ \
         --save_dir RESNET50 \
+        --test_dir ./data/testData \
         --project_name resnet50

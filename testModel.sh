@@ -6,3 +6,5 @@ python testModel.py \
         --checkpoint $MODELPATH \
         --batch_size 1 \
 
+
+

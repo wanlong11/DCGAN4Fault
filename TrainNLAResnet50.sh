@@ -5,4 +5,5 @@ python trainNLAresnet50.py \
         --eval_interval 1 \
         --tensorboard_dir /tf_logs/NLARESNET50/ \
         --save_dir NLARESNET50 \
-        --project_name NLAresnet50
+        --project_name NLAresnet50 \
+        --test_dir ./data/testData
