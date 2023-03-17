@@ -26,7 +26,7 @@ def calcuMeanAndStd(path):
     # 计算路径下所有图像的通道mean和std
     # Define the dataset and data loader
     dataset = ImageFolder(path, transform=transforms.ToTensor())
-    dataloader = torch.utils.data.DataLoader(dataset, batch_size=opt.batch_size, shuffle=False, num_workers=1)
+    dataloader = torch.utils.data.DataLoader(dataset, batch_size=1, shuffle=False, num_workers=1)
 
     # Define variables to store the sum and square sum of pixel values
     sum_ = torch.zeros(3)
@@ -65,8 +65,8 @@ dataset = ImageFolder(data_dir, transform=train_transforms)
 train_set, test_set = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset)-int(0.8 * len(dataset))])
 
 # Define the data loaders for training and testing sets
-train_loader = torch.utils.data.DataLoader(train_set, batch_size=64, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=64, shuffle=False)
+train_loader = torch.utils.data.DataLoader(train_set, batch_size=opt.batch_size, shuffle=True)
+test_loader = torch.utils.data.DataLoader(test_set, batch_size=opt.batch_size, shuffle=False)
 
 model = ResNet18(num_classes=10).to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)

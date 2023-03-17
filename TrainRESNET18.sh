@@ -1,5 +1,5 @@
 python trainResnet.py \
-        --data_dir ../data/trainData \
+        --data_dir ./data/trainData \
         --SB_before 50 \
         --n_epochs  100 \
         --eval_interval 2 \
