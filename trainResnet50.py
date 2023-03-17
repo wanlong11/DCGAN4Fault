@@ -19,6 +19,7 @@ parser.add_argument("--tensorboard_dir", type=str ,help="tensorboard dirationary
 parser.add_argument("--save_dir",type=str,help="the path of save checkpoint")
 parser.add_argument("--project_name",type=str,help="project name")
 parser.add_argument("--batch_size",type=int,default=64,help="project name")
+parser.add_argument("--test_dir",type=str,help="project name")
 opt = parser.parse_args()
 
 
@@ -52,23 +53,26 @@ train_transforms = transforms.Compose([
     transforms.ToTensor(),
     transforms.Normalize(*calcuMeanAndStd(path=data_dir))
 ])
-# 这里测试集应该使用
-# test_transforms = transforms.Compose([
-#     transforms.Resize(256),
-#     transforms.CenterCrop(224),
-#     transforms.ToTensor(),
-#     transforms.Normalize(*calcuMeanAndStd(path=data_dir))
-# ])
+
+test_transforms = transforms.Compose([
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.ToTensor(),
+    transforms.Normalize(*calcuMeanAndStd(path=data_dir))
+])
 
 dataset = ImageFolder(data_dir, transform=train_transforms)
+test_dataset = ImageFolder(opt.test_dir,transform=test_transforms)
 # Split the dataset into training and testing sets
-train_set, test_set = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset)-int(0.8 * len(dataset))])
+train_set, val_set = torch.utils.data.random_split(dataset, [int(0.8 * len(dataset)), len(dataset)-int(0.8 * len(dataset))])
 
 # Define the data loaders for training and testing sets
 train_loader = torch.utils.data.DataLoader(train_set, batch_size=opt.batch_size, shuffle=True)
-test_loader = torch.utils.data.DataLoader(test_set, batch_size=opt.batch_size, shuffle=False)
+val_loader = torch.utils.data.DataLoader(val_set, batch_size=opt.batch_size, shuffle=False)
+test_loader = torch.utils.data.DataLoader(test_dataset, batch_size=opt.batch_size, shuffle=False)
 
-model = ResNet50(num_classes=4).to(device)
+
+model = ResNet50(num_classes=10).to(device)
 optimizer = torch.optim.SGD(model.parameters(), lr=0.001, momentum=0.9)
 criterion = nn.CrossEntropyLoss()
 start_epoch = 0
@@ -97,13 +101,24 @@ for epoch in range(start_epoch, opt.n_epochs):
         writer.add_scalar('Train/Loss', loss, global_step=global_step)
         global_step+=1
         print(loss.item())
-
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for images, labels in test_loader:
+            images = images.to(device)
+            labels = labels.to(device)
+            outputs = model(images)
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
+            writer.add_scalar('test/Loss', loss, global_step=global_step)
+        writer.add_scalar('test/Accuracy', 100 * correct / total, global_step=global_step)
     # evaluate the model
     if epoch > opt.SB_before and epoch % opt.eval_interval == 0:
         correct = 0
         total = 0
         with torch.no_grad():
-            for images, labels in test_loader:
+            for images, labels in val_loader:
                 images=images.to(device)
                 labels=labels.to(device)
                 outputs = model(images)
